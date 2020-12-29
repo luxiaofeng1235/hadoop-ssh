@@ -1,0 +1,10 @@
++ php getter.php wireless_allclient_pay_frequency 2013-02-22
++ set +x
++ php getter.php wireless_allclient_pay_frequency 2013-02-23
++ set +x
++ php getter.php wireless_allclient_pay_frequency 2013-02-24
++ set +x
++ php getter.php wireless_allclient_pay_frequency 2013-02-25
++ set +x
++ php getter.php wireless_allclient_pay_frequency 2013-02-26
++ set +x

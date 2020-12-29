@@ -1,0 +1,118 @@
+<?php
+include_once("inc.php");
+global $gconf;
+if ($argc < 5 || $argc > 6) {
+    echo "usage: loader [stat_cache.]sql_name all|day| stdate edate [suffix]\n";
+    exit(1);
+} 
+if (strpos($argv[1],'.') !== false) {
+    list ( $loader_dest,$sqlfile) = explode('.',$argv[1],2);
+} else {
+    $loader_dest = 'stat_cache';
+    $sqlfile = $gconf['LOG_PATH']."/meta/".$argv[1].".sql";
+}
+if (!file_exists($sqlfile)) {
+    glog("sql not exists $sqlfile");
+    exit(1);
+} else {
+    $sqlcontent = file_get_contents($sqlfile);
+}
+
+$sttime = strtotime($argv[3]);
+$etime = strtotime($argv[4]);
+$dbh = ggetMysqlHandle('MAIN',$loader_dest);
+
+$sqlname = $argv[1];
+$logroot = $gconf['LOG_PATH'];
+if ($argv[2] == "all") {
+    $tablename = $sqlname;
+    if (isset($argv[5])) {
+        $tablename = $tablename."_".$argv[5];
+    }
+    $initsql = "DROP TABLE IF EXISTS $tablename";
+    mysql_query($initsql);
+    $initsql = sprintf($sqlcontent,$tablename,"");
+    trim($initsql,";");
+    mysql_query($initsql);
+    for($t=$sttime;$t<=$etime;$t+=86400) {
+        $stdate = date('Ymd',$t);
+        $year = date('Y',$t);
+        $yearmonth = date('Ym',$t);
+        if ($sqlname == "stat_www_visit_log") {
+            $cat = sprintf ("zcat %s/%s/%s/%s/%s_%s_*.gz",
+                    $logroot,$sqlname,$year,$yearmonth,$sqlname,$stdate);
+        } else if (in_array($sqlname,array("go_goods","spe_activity","go_sp"))) {
+            if ($t == $etime) {
+                $last_line = system("ls -tr1 $logroot/$sqlname",$retval);
+                if ($retval != 0 || empty($last_line)) {
+                    glog("ret = $retval cmd = ls -tr1 $logroot/$sqlname");
+                    break;
+                }
+                $cat = "zcat $logroot/$sqlname/$last_line";
+            } else {
+                continue;
+            }
+        } else {
+            $cat = sprintf ("zcat %s/%s/%s/%s_%s.gz",
+                    $logroot,$sqlname,$year,$sqlname,$stdate);
+            $output = array();
+        }
+        $mysql = sprintf("%s -h%s -P%s -u%s -p'%s' -Dstat_cache --local-infile -e 'load data  local infile \"/dev/stdin\" into table %s CHARACTER SET utf8 fields terminated by  \"\t\" enclosed by \"NULL\"'",
+                $gconf['MYSQL_BIN'],
+                $gconf['MYSQL']['MAIN']['HOST'],
+                $gconf['MYSQL']['MAIN']['PORT'],
+                $gconf['MYSQL']['MAIN']['USER'],
+                $gconf['MYSQL']['MAIN']['PASS'],
+                $tablename
+                );
+        $output = array();
+        exec("export LD_LIBRARY_PATH=/home/bri/lib/mysql:\$LD_LIBRARY_PATH  && $cat|$mysql",$output,$ret);
+        if ($ret >0) {
+            glog("ret=$ret cmd= $cat|$mysql output=".print_r($output,true));
+        } else {
+        }
+    }
+} else if ($argv[2] == "day") {
+    for($t=$sttime;$t<=$etime;$t+=86400) {
+        $stdate = date('Ymd',$t);
+        $year = date('Y',$t);
+        $yearmonth = date('Ym',$t);
+        $tablename = "${sqlname}_$stdate";
+        $initsql = "DROP TABLE IF EXISTS $tablename";
+        mysql_query($initsql,$dbh);
+        $initsql = sprintf($sqlcontent,$sqlname,"_$stdate");
+        trim($initsql,";");
+        mysql_query($initsql);
+        if ($sqlname == "stat_www_visit_log") {
+            $cat = sprintf ("zcat %s/%s/%s/%s/%s_%s_*.gz",
+                    $logroot,$sqlname,$year,$yearmonth,$sqlname,$stdate);
+        } else if (in_array($sqlname,array("go_goods","spe_activity","go_sp"))) {
+            $last_line = system("ls -tr1 $logroot/$sqlname",$retval);
+            if ($retval != 0 || empty($last_line)) {
+                glog("ret = $retval cmd = ls -tr1 $logroot/$sqlname");
+                break;
+            }
+            $cat = "zcat $logroot/$sqlname/$last_line";
+        } else {
+            $cat = sprintf ("zcat %s/%s/%s/%s_%s.gz",
+                    $logroot,$sqlname,$year,$sqlname,$stdate);
+        }
+        $mysql = sprintf("%s -h%s -P%s -u%s -p'%s' -Dstat_cache --local-infile -e 'load data  local infile \"/dev/stdin\" into table %s CHARACTER SET utf8 fields terminated by  \"\t\" enclosed by \"NULL\"'",
+                $gconf['MYSQL_BIN'],
+                $gconf['MYSQL']['MAIN']['HOST'],
+                $gconf['MYSQL']['MAIN']['PORT'],
+                $gconf['MYSQL']['MAIN']['USER'],
+                $gconf['MYSQL']['MAIN']['PASS'],
+                $tablename
+                );
+        $output = array();
+        exec("export LD_LIBRARY_PATH=/home/bri/lib/mysql:\$LD_LIBRARY_PATH  && $cat|$mysql",$output,$ret);
+        if ($ret >0) {
+            glog("ret=$ret cmd= $cat|$mysql output=".print_r($output,true));
+        } else {
+        }
+    }
+} else {
+    glog("unknown mode ".$argv[2]);
+    exit(1);
+}
