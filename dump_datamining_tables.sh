@@ -5,7 +5,7 @@ if [ ${#} -ne 1 ]; then
         echo "usage: $0  %Y-%m-%d"
         exit 1
 fi
-
+#1122
 export LD_LIBRARY_PATH=/home/bri/lib/mysql:$LD_LIBRARY_PATH;
 sql_var=' -r  -quick --default-character-set=utf8  --skip-column '
 logdate_short=`date +%Y%m%d -d"$1"`;
@@ -23,7 +23,7 @@ db_name=datamining
 #searchlog
 mkdir -p $LOG_PATH/search_log/$logyear
 logmonth=`date +%Y%m -d"$1"`;
-sql="select id,search_time,display_id,client_key,user_id,city_id,type,query_str,online_num,ret_num,limit_beg,limit_num,time_cost from search_log$logmonth 
+sql="select id,search_time,display_id,client_key,user_id,city_id,type,query_str,online_num,ret_num,limit_beg,limit_num,time_cost from search_log$logmonth
 	where search_time>='$logdate 00:00:00' and search_time<='$logdate 23:59:59'"
 echo $sql
 echo START: `date`

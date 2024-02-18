@@ -17,7 +17,7 @@ logyear=`date +%Y -d"$1"`;
 sec=`date +%s -d"$1"`
 ((datemod=sec / 86400 % 30))
 
-
+#@1122
 # dump go_visit_log from wap
 db_host=$ACTIVITY_MYSQL_HOST
 db_user=$ACTIVITY_MYSQL_USER
@@ -35,7 +35,7 @@ $MYSQL_BIN $sql_var -h$db_host -u$db_user -p$db_pass -P$db_port -D$db_name -e "$
 
 #做展开和去重
 #去重办法是建关联数组, 后读到的覆盖前面的
-cat $LOG_PATH/spe_activity/spe_activity_${datemod}|$PHP_BIN -d'error_log=/dev/stderr' -r ' 
+cat $LOG_PATH/spe_activity/spe_activity_${datemod}|$PHP_BIN -d'error_log=/dev/stderr' -r '
 $column = explode(",","id,pinyin,online_goods_id,isBeauty,goods");
 $spe = array();
 while ($l = stream_get_line(STDIN,1048576,"\n")) {
@@ -58,7 +58,7 @@ error_log(count($spe));
     ' |gzip -c >$LOG_PATH/spe_activity/spe_activity_${datemod}.gz
 rm -f $LOG_PATH/spe_activity/spe_activity_${datemod}
 
-#dump youhui_temp 
+#dump youhui_temp
 mkdir -p $LOG_PATH/youhui_temp
 sql="select id,uid,valid_time,expire,allow_cat,allow_cat_name,allow_channel,kind,discount,value,summary,limit_price,limit_total_fee,add_time,theme,active from youhui_temp"
 $MYSQL_BIN $sql_var -h$db_host -u$db_user -p$db_pass -P$db_port -D$db_name -e "$sql" |gzip -c >$LOG_PATH/youhui_temp/youhui_temp_${datemod}.gz
