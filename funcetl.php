@@ -14,6 +14,8 @@ function funcGetTaskByType($type){
 	return array();
     }
 
+    //1122
+
     $meta = array();
     $frequency = array();
     $sql = "select plan_id,latency,meta,frequency from etl_plan where plan_id in(".implode(",",array_keys($plan_ids)).")";
@@ -24,7 +26,7 @@ function funcGetTaskByType($type){
 	$frequency[$row['plan_id']] = $row['frequency'];
     }
 
-    $plan_ids = array();	
+    $plan_ids = array();
     foreach($rs as $key => $val){
 	if(time()>=(strtotime($val['basetime'])+$plan_late[$val['plan_id']])){
 	    $plan_ids[$val['plan_id']] = 1;
@@ -80,7 +82,7 @@ return $cmdArr;
     $php = $gconf['PHP_BIN'];
     $stdate = date('Y-m-d',$sttime-14*86400);
     $edate = date('Y-m-d',$etime);
-    foreach (array("go_buy","go_goods","go_sp","go_order","go_visit_trade_no","reg_user","user_reg_session","spe_activity") as $table) { 
+    foreach (array("go_buy","go_goods","go_sp","go_order","go_visit_trade_no","reg_user","user_reg_session","spe_activity") as $table) {
         $cmdArr []= "$php loader.php $table all $stdate $edate";
     }
     glog("postload:begin  $sttime $etime");
